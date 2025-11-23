@@ -32,8 +32,8 @@ const FlipBookViewer = () => {
   const playIntervalRef = useRef(null);
   const canvasRef = useRef(null);
 
+  //apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
   const { loading, error, data, generatePrompts, abort } = useAnthropicFlipbookPrompts({
-    apiKey: process.env.REACT_APP_ANTHROPIC_API_KEY,
     endpoint: "https://api.anthropic.com/v1/responses",
     model: "claude-2.1"
   });

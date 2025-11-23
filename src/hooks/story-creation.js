@@ -9,7 +9,6 @@ import { useState, useRef, useCallback } from "react";
  * useAnthropicFlipbookPrompts
  *
  * @param {Object} opts
- * @param {string} opts.apiKey - Anthropic API key
  * @param {string} [opts.endpoint] - Anthropic responses endpoint (default: https://api.anthropic.com/v1/responses)
  * @param {string} [opts.model] - Anthropic model name (optional)
  */
@@ -213,7 +212,7 @@ Requirements:
         abortRef.current = null;
       }
     },
-    [apiKey, defaultModel, defaultEndpoint]
+    [anthropicApiKey, defaultModel, defaultEndpoint]
   );
 
   const abort = useCallback(() => {
