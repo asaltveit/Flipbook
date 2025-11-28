@@ -121,15 +121,17 @@ Requirements:
       };
 
       try {
+        const { headers: customHeaders, ...restFetchOptions } = fetchOptions;
         const resp = await fetch(defaultEndpoint, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${anthropicApiKey}`,
+            ...customHeaders,
           },
           body: JSON.stringify(body),
           signal: controller.signal,
-          ...fetchOptions,
+          ...restFetchOptions,
         });
 
         if (!resp.ok) {

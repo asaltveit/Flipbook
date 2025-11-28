@@ -32,10 +32,8 @@ const FlipBookViewer = () => {
   const playIntervalRef = useRef(null);
   const canvasRef = useRef(null);
 
-  //apiKey: import.meta.env.VITE_ANTHROPIC_API_KEY,
-  const { loading, error, data, generatePrompts, abort } = useAnthropicFlipbookPrompts({
-    endpoint: "https://api.anthropic.com/v1/responses",
-    model: "claude-2.1"
+  const { generatePrompts, data } = useAnthropicFlipbookPrompts({
+    apiKey: import.meta.env.VITE_ANTHROPIC_KEY,
   });
 
   // Check auth status on mount
@@ -230,13 +228,17 @@ const FlipBookViewer = () => {
     const previousImages = [
       { id: "prev_img_1", url: "https://example.com/fox_start.png", short_description: "fox facing left wearing red scarf" }
     ];
-    const result = await generatePrompts({
-      storyIdea: flipbookData.prompt,
-      previousImages,
-      maxFramesPerEvent: 3,
-      falHtmlPath: "/mnt/data/Hack FLUX_ Beyond One - API and Prompting Guide.html"
-    });
-    console.log("result", result);
+
+    const run = () => {
+      generatePrompts({
+        storyIdea: flipbookData.prompt,
+        previousImages: [],
+        maxFramesPerEvent: 3
+      });
+    };
+
+    run();
+    
   };
 
   // Check if generation is ready
