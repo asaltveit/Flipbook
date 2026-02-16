@@ -4,6 +4,13 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      react:
+        patterns:
+          - "*react*"
+      eslint:
+        patterns:
+          - "*eslint*"
   - package-ecosystem: "github-actions" 
     directory: "/"
     schedule:
