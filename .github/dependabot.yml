@@ -5,15 +5,15 @@ updates:
     schedule:
       interval: "weekly"
     groups:
+      vite:
+        patterns:
+          - "*vite*"
       react:
         patterns:
           - "*react*"
       eslint:
         patterns:
           - "*eslint*"
-      vite:
-        patterns:
-          - "*vite*"
   - package-ecosystem: "github-actions" 
     directory: "/"
     schedule:
