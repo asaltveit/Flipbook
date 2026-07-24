@@ -1,26 +1,69 @@
 import { fal } from "@fal-ai/client";
 
-// Combine prompts for all generation and 
-// individual story component input?
+const FAL_MODEL = "fal-ai/alpha-image-232/edit-image";
 
-export async function createImage() {
-    const url = await fal.storage.upload("../../public/Draw-a-Giraffe.jpeg");
-    const result = await fal.subscribe("fal-ai/alpha-image-232/edit-image", {
-      input: {
-        "prompt": "This giraffe starting to jump, as one frame in a sequence, keep everything hand-drawn.",
-        "image_size": "auto",
-        "output_format": "png",
-        "image_urls": [
-          url
-        ]
-      },
-      logs: true,
-      onQueueUpdate: (update) => {
-        if (update.status === "IN_PROGRESS") {
-          update.logs.map((log) => log.message).forEach(console.log);
-        }
+fal.config({
+  credentials: import.meta.env.VITE_FAL_KEY,
+});
+
+function extractImageUrl(data) {
+  if (data?.images?.[0]?.url) return data.images[0].url;
+  if (data?.image?.url) return data.image.url;
+  if (typeof data?.url === "string") return data.url;
+  throw new Error("Unexpected Fal response format");
+}
+
+export async function createImage({ prompt, referenceImageUrl, onProgress }) {
+  const result = await fal.subscribe(FAL_MODEL, {
+    input: {
+      prompt,
+      image_size: "auto",
+      output_format: "png",
+      image_urls: [referenceImageUrl],
+    },
+    logs: true,
+    onQueueUpdate: (update) => {
+      if (update.status === "IN_PROGRESS" && onProgress) {
+        onProgress(update);
+      }
+    },
+  });
+
+  return extractImageUrl(result.data);
+}
+
+export async function createImagesForFrames({
+  frames,
+  referenceImageUrl,
+  onFrameStart,
+  onFrameComplete,
+}) {
+  const generated = [];
+
+  for (let i = 0; i < frames.length; i++) {
+    const frame = frames[i];
+    const prompt = frame.prompt || frame;
+    if (!prompt) continue;
+
+    onFrameStart?.(i + 1, frames.length, frame);
+
+    const imageUrl = await createImage({
+      prompt,
+      referenceImageUrl,
+      onProgress: (update) => {
+        update.logs?.map((log) => log.message).forEach(console.log);
       },
     });
-    console.log(result.data);
-    console.log(result.requestId);
+
+    generated.push({
+      imageUrl,
+      caption: frame.caption,
+      eventId: frame.event_id,
+      frameIndex: frame.frame_index ?? i,
+    });
+
+    onFrameComplete?.(i + 1, frames.length, generated[generated.length - 1]);
+  }
+
+  return generated;
 }

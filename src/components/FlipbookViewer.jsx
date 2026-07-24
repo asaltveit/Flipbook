@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Upload, Download, ChevronLeft, ChevronRight, GripVertical, Trash2, Save } from 'lucide-react';
 import useAnthropicFlipbookPrompts from '../hooks/story-creation';
+import { createImagesForFrames } from '../hooks/image-creation';
 
 const FlipBookViewer = () => {
   // Auth state - TODO: Replace with actual auth provider (Supabase Auth, etc.)
@@ -29,10 +30,11 @@ const FlipBookViewer = () => {
   const [draggedIndex, setDraggedIndex] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState('');
   const playIntervalRef = useRef(null);
   const canvasRef = useRef(null);
 
-  const { generatePrompts, data } = useAnthropicFlipbookPrompts({
+  const { generatePrompts } = useAnthropicFlipbookPrompts({
     apiKey: import.meta.env.VITE_ANTHROPIC_KEY,
   });
 
@@ -214,31 +216,90 @@ const FlipBookViewer = () => {
   };
 
   const handleGenerate = async () => {
-    // Validation
     if (!flipbookData.prompt.trim()) {
-      alert('⚠️ Please enter a prompt to generate images');
+      alert('Please enter a prompt to generate images');
       return;
     }
-    
+
     if (flipbookData.images.length === 0) {
-      alert('⚠️ Please upload at least one image to start generation');
+      alert('Please upload at least one image to start generation');
       return;
     }
-    //const storyIdea = "A small fox learns to fly with a paper kite in a windy park.";
-    const previousImages = [
-      { id: "prev_img_1", url: "https://example.com/fox_start.png", short_description: "fox facing left wearing red scarf" }
-    ];
 
-    const run = () => {
-      generatePrompts({
+    if (!import.meta.env.VITE_FAL_KEY) {
+      alert('Missing VITE_FAL_KEY. Add your Fal API key to .env');
+      return;
+    }
+
+    const referenceImage = flipbookData.images[0];
+    const previousImages = [{
+      id: 'prev_img_1',
+      url: referenceImage.imageUrl,
+      short_description: referenceImage.fileName || 'reference drawing',
+    }];
+
+    setIsGenerating(true);
+    setGenerationProgress('Generating story prompts...');
+
+    try {
+      const promptResult = await generatePrompts({
         storyIdea: flipbookData.prompt,
-        previousImages: [],
-        maxFramesPerEvent: 3
+        previousImages,
+        maxFramesPerEvent: 3,
       });
-    };
 
-    run();
-    
+      if (promptResult?.error || !promptResult?.data) {
+        const message = promptResult?.error?.message || 'Failed to generate story prompts';
+        alert(`⚠️ ${message}`);
+        return;
+      }
+
+      const frames = promptResult.data.frames?.length
+        ? promptResult.data.frames
+        : (promptResult.data.prompts || []).map((prompt, index) => ({
+            prompt,
+            frame_index: index,
+            caption: `Frame ${index + 1}`,
+          }));
+
+      if (frames.length === 0) {
+        alert('⚠️ No image prompts were returned. Try a different story idea.');
+        return;
+      }
+
+      const generatedImages = await createImagesForFrames({
+        frames,
+        referenceImageUrl: referenceImage.imageUrl,
+        onFrameStart: (current, total) => {
+          setGenerationProgress(`Generating image ${current} of ${total}...`);
+        },
+      });
+
+      const newImages = generatedImages.map((img, idx) => ({
+        id: `gen_${Date.now()}_${idx}`,
+        pageNumber: flipbookData.images.length + idx,
+        imageUrl: img.imageUrl,
+        fileName: img.caption || `Generated frame ${idx + 1}`,
+        caption: img.caption,
+        generated: true,
+        uploadedAt: new Date().toISOString(),
+      }));
+
+      setFlipbookData(prev => ({
+        ...prev,
+        images: [...prev.images, ...newImages].slice(0, 30),
+        updatedAt: new Date().toISOString(),
+      }));
+
+      setGenerationProgress('');
+      alert(`✅ Generated ${newImages.length} image${newImages.length === 1 ? '' : 's'}!`);
+    } catch (error) {
+      console.error('Generation error:', error);
+      alert(`❌ Generation failed: ${error.message}`);
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress('');
+    }
   };
 
   // Check if generation is ready
@@ -493,7 +554,9 @@ const FlipBookViewer = () => {
                   >
                     <span className="text-lg">✨</span>
                     <span className="text-sm font-semibold">
-                      {isGenerating ? 'Generating...' : 'Run Generation'}
+                      {isGenerating
+                        ? (generationProgress || 'Generating...')
+                        : 'Run Generation'}
                     </span>
                   </button>
                   
