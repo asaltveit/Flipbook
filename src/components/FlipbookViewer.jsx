@@ -489,26 +489,30 @@ const FlipBookViewer = () => {
           )}
         </div>
 
-        {/* Controls Panel */}
+        {/* Generation Controls */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-700">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 mb-4">
+            Generation
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2 text-gray-300">Upload Images</label>
-              <label className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition-colors">
-                <Upload size={18} />
-                <span className="text-sm">Choose Files</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-xs text-gray-400 mt-1">{flipbookData.images.length} page(s)</p>
-              
-              {/* Prompt Input */}
-              <div className="mt-4">
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2 text-gray-300">Upload Images</label>
+                <label className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition-colors">
+                  <Upload size={18} />
+                  <span className="text-sm">Choose Files</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                </label>
+                <p className="text-xs text-gray-400 mt-1">{flipbookData.images.length} page(s)</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-medium mb-2 text-gray-300">
                   Prompt <span className="text-red-400">*</span>
                 </label>
@@ -525,50 +529,19 @@ const FlipBookViewer = () => {
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Flip Speed: {flipSpeed}ms
-                </label>
-                <input
-                  type="range"
-                  min="100"
-                  max="2000"
-                  step="50"
-                  value={flipSpeed}
-                  onChange={(e) => setFlipSpeed(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Actions</label>
-                <div className="space-y-2">
-                  <button
-                    onClick={handleGenerate}
-                    disabled={!canGenerate || isGenerating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-lg">✨</span>
-                    <span className="text-sm font-semibold">
-                      {isGenerating
-                        ? (generationProgress || 'Generating...')
-                        : 'Run Generation'}
-                    </span>
-                  </button>
-                  
-                  <button
-                    onClick={handleExport}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                  >
-                    <Download size={18} />
-                    <span className="text-sm">Export Page</span>
-                  </button>
-                </div>
-              </div>
+            <div className="flex flex-col justify-end">
+              <button
+                onClick={handleGenerate}
+                disabled={!canGenerate || isGenerating}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-lg">✨</span>
+                <span className="text-sm font-semibold">
+                  {isGenerating
+                    ? (generationProgress || 'Generating...')
+                    : 'Run Generation'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -669,9 +642,13 @@ const FlipBookViewer = () => {
           )}
         </div>
 
-        {/* Playback Controls */}
+        {/* Viewing Controls */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-gray-400 mb-4">
+            Viewing
+          </h2>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
             <button
               onClick={() => flipToPage(currentPage - 1)}
               disabled={currentPage === 0 || isFlipping}
@@ -707,11 +684,37 @@ const FlipBookViewer = () => {
             >
               <ChevronRight size={24} />
             </button>
+
+            <button
+              onClick={handleExport}
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+            >
+              <Download size={18} />
+              <span className="hidden sm:inline">Export Page</span>
+            </button>
+          </div>
+
+          <div className="max-w-md mx-auto mb-6">
+            <label className="block text-sm font-medium mb-2 text-gray-300 text-center">
+              Flip Speed: {flipSpeed}ms
+            </label>
+            <input
+              type="range"
+              min="100"
+              max="2000"
+              step="50"
+              value={flipSpeed}
+              onChange={(e) => setFlipSpeed(parseInt(e.target.value))}
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
+              }}
+            />
           </div>
 
           {/* Page Thumbnails with Drag & Drop */}
           {totalPages > 0 && (
-            <div className="mt-6">
+            <div>
               <div className="text-sm text-gray-400 mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <GripVertical size={16} />
