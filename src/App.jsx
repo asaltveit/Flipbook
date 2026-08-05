@@ -1,17 +1,12 @@
-//import { useState } from 'react'
-//import reactLogo from './assets/react.svg'
-//import viteLogo from '/vite.svg'
-import FlipBookViewer from './components/FlipbookViewer'
-//import './App.css'
+import FlipBookViewer from './components/FlipbookViewer';
+import { ToastProvider } from './components/ui/ToastProvider';
 
 function App() {
-  //const [count, setCount] = useState(0)
-
   return (
-    <>
+    <ToastProvider>
       <FlipBookViewer />
-    </>
-  )
+    </ToastProvider>
+  );
 }
 
-export default App
+export default App;
