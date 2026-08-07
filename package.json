@@ -12,7 +12,9 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "pretest:e2e": "node scripts/ensure-vite-bin.cjs",
     "test:a11y": "playwright test e2e/accessibility.spec.js",
+    "pretest:a11y": "node scripts/ensure-vite-bin.cjs",
     "lhci": "lhci autorun"
   },
   "dependencies": {
