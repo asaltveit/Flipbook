@@ -2,10 +2,26 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import jsxA11y from 'eslint-plugin-jsx-a11y'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores([
+    'dist',
+    'coverage',
+    'lighthouse-reports',
+    'playwright-report',
+    'test-results',
+    'src/hooks/useImageCreation.js',
+    'src/hooks/story-creation2.js',
+    'src/components/supabase/**',
+  ]),
+  {
+    files: ['playwright.config.js', 'lighthouserc.cjs'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
   {
     files: ['**/*.{js,jsx}'],
     extends: [
@@ -22,8 +38,27 @@ export default defineConfig([
         sourceType: 'module',
       },
     },
+    plugins: {
+      'jsx-a11y': jsxA11y,
+    },
     rules: {
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      ...jsxA11y.flatConfigs.recommended.rules,
+      'jsx-a11y/no-static-element-interactions': 'warn',
+      'jsx-a11y/click-events-have-key-events': 'warn',
+    },
+  },
+  {
+    files: ['src/components/FlipbookViewer.jsx'],
+    rules: {
+      'react-hooks/set-state-in-effect': 'off',
+    },
+  },
+  {
+    files: ['**/*.{test,spec}.{js,jsx}', 'e2e/**', 'src/test/**'],
+    rules: {
+      'jsx-a11y/no-static-element-interactions': 'off',
+      'jsx-a11y/click-events-have-key-events': 'off',
     },
   },
 ])

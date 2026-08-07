@@ -26,3 +26,10 @@ dist-ssr
 # Environment
 .env.local
 .env
+
+# Test & CI artifacts
+coverage
+test-results
+playwright-report
+playwright/.cache
+lighthouse-reports
