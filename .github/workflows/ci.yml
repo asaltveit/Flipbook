@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run lint
       - run: npm run test:coverage
       - name: Upload coverage
@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - run: npm run build
         env:
           VITE_ANTHROPIC_KEY: ci-test-anthropic-key
@@ -50,7 +50,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - uses: actions/download-artifact@v4
         with:
           name: dist
@@ -69,7 +69,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci --legacy-peer-deps
+      - run: npm ci
       - uses: actions/download-artifact@v4
         with:
           name: dist
