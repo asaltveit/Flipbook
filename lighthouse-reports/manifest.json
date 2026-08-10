@@ -1,0 +1,14 @@
+[
+  {
+    "url": "http://localhost:62673/index.html",
+    "isRepresentativeRun": true,
+    "htmlPath": "/Users/annasaltveit/Documents/projects/Flipbook/lighthouse-reports/localhost-index_html-2026_08_07_20_07_18.report.html",
+    "jsonPath": "/Users/annasaltveit/Documents/projects/Flipbook/lighthouse-reports/localhost-index_html-2026_08_07_20_07_18.report.json",
+    "summary": {
+      "performance": 1,
+      "accessibility": 1,
+      "best-practices": 0.96,
+      "seo": 1
+    }
+  }
+]
