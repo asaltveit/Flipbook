@@ -49,7 +49,7 @@ export default function useAnthropicFlipbookPrompts({ endpoint, model } = {}) {
       setData(null);
 
       if (abortRef.current) {
-        try { abortRef.current.abort(); } catch (e) {}
+        try { abortRef.current.abort(); } catch { /* ignore */ }
       }
       const controller = new AbortController();
       abortRef.current = controller;
@@ -173,13 +173,13 @@ Requirements:
         let parsed;
         try {
           parsed = JSON.parse(assistantText);
-        } catch (parseErr) {
+        } catch {
           // If there is extra content before/after JSON, attempt to extract a JSON substring
           const match = assistantText.match(/\{[\s\S]*\}$/);
           if (match) {
             try {
               parsed = JSON.parse(match[0]);
-            } catch (e2) {
+            } catch {
               setError(new Error("Assistant returned text but it wasn't valid JSON"));
               setLoading(false);
               return { error: "invalid_json", raw: assistantText };

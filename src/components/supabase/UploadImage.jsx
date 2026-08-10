@@ -1,7 +1,7 @@
 // UploadImage.js
 import React, { useState } from 'react';
-import { supabase } from './supabaseClient';
-import { useUser } from './useUser';
+import { supabase } from '@/lib/supabaseClient';
+import { useUser } from '@/hooks/useUser';
 
 export function UploadImage({ onUploadComplete }) {
   const { user } = useUser();

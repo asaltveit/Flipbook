@@ -1,12 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, RotateCcw, Upload, Download, ChevronLeft, ChevronRight, GripVertical, Trash2, Save } from 'lucide-react';
-import useAnthropicFlipbookPrompts from '../hooks/story-creation';
-import { createImagesForFrames } from '../hooks/image-creation';
+import useAnthropicFlipbookPrompts from '@/hooks/story-creation';
+import { createImagesForFrames } from '@/hooks/image-creation';
+import ConfirmDialog from './ui/ConfirmDialog';
+import {
+  getImageForPage as getImageForPageUtil,
+  renumberImages,
+  adjustCurrentPageAfterDelete,
+  capImagesAt30,
+  prefersReducedMotion,
+} from '@/lib/flipbook-utils';
 
 const FlipBookViewer = () => {
   // Auth state - TODO: Replace with actual auth provider (Supabase Auth, etc.)
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [user, setUser] = useState(null);
+  const [_user, setUser] = useState(null);
 
   // Supabase-ready state structure
   const [flipbookData, setFlipbookData] = useState({
@@ -31,6 +39,8 @@ const FlipBookViewer = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generationProgress, setGenerationProgress] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [reduceMotion, setReduceMotion] = useState(() => prefersReducedMotion());
   const playIntervalRef = useRef(null);
   const canvasRef = useRef(null);
 
@@ -38,31 +48,9 @@ const FlipBookViewer = () => {
     apiKey: import.meta.env.VITE_ANTHROPIC_KEY,
   });
 
-  // Check auth status on mount
-  useEffect(() => {
-    checkAuthStatus();
-  }, []);
-
-  // Fetch flipbook data based on auth status
-  useEffect(() => {
-    if (isLoggedIn) {
-      fetchFlipbookFromSupabase();
-    } else {
-      // Load from local state only
-      initializeLocalFlipbook();
-    }
-  }, [isLoggedIn]);
-
-  // Check if user is authenticated
   const checkAuthStatus = async () => {
     try {
-      // TODO: Replace with actual auth check
-      // const { data: { user } } = await supabase.auth.getUser();
-      // setIsLoggedIn(!!user);
-      // setUser(user);
-      
       console.log('🔐 Checking auth status...');
-      // Simulating not logged in by default
       setIsLoggedIn(false);
       setUser(null);
     } catch (error) {
@@ -71,7 +59,6 @@ const FlipBookViewer = () => {
     }
   };
 
-  // Initialize local flipbook (no database)
   const initializeLocalFlipbook = () => {
     console.log('📱 Initializing local flipbook (not logged in)');
     setFlipbookData({
@@ -84,20 +71,9 @@ const FlipBookViewer = () => {
     });
   };
 
-  // Simulated Supabase fetch function
   const fetchFlipbookFromSupabase = async () => {
     try {
-      // TODO: Replace with actual Supabase query
-      // const { data, error } = await supabase
-      //   .from('flipbooks')
-      //   .select('*')
-      //   .eq('id', flipbookId)
-      //   .single();
-      
-      // For now, initialize with empty state
       console.log('📚 Fetching flipbook from Supabase...');
-      
-      // Simulated data structure that would come from Supabase
       const mockData = {
         id: 'flipbook_123',
         name: 'My Flipbook',
@@ -106,12 +82,30 @@ const FlipBookViewer = () => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
-      
       setFlipbookData(mockData);
     } catch (error) {
       console.error('Error fetching flipbook:', error);
     }
   };
+
+  // Check auth status on mount
+  useEffect(() => {
+    checkAuthStatus();
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handler = (e) => setReduceMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Fetch flipbook data based on auth status
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetchFlipbookFromSupabase();
+    } else {
+      // Load from local state only
+      initializeLocalFlipbook();
+    }
+  }, [isLoggedIn]);
 
   // Simulated Supabase save function (only for logged-in users)
   const saveToSupabase = async () => {
@@ -187,32 +181,29 @@ const FlipBookViewer = () => {
     // Update flipbook state with new images
     setFlipbookData(prev => ({
       ...prev,
-      images: [...prev.images, ...newImages].slice(0, 30), // Max 30 images
+      images: capImagesAt30(prev.images, newImages),
       updatedAt: new Date().toISOString()
     }));
   };
 
   // Delete an image from a specific page
   const deleteImage = (pageIndex) => {
-    const newImages = flipbookData.images.filter((_, idx) => idx !== pageIndex);
-    // Renumber remaining images
-    const renumberedImages = newImages.map((img, idx) => ({
-      ...img,
-      pageNumber: idx
-    }));
-    
+    const newImages = renumberImages(
+      flipbookData.images.filter((_, idx) => idx !== pageIndex)
+    );
+
     setFlipbookData(prev => ({
       ...prev,
-      images: renumberedImages,
+      images: newImages,
       updatedAt: new Date().toISOString()
     }));
-    
-    // Adjust current page if needed
-    if (currentPage >= renumberedImages.length && renumberedImages.length > 0) {
-      setCurrentPage(renumberedImages.length - 1);
-    } else if (renumberedImages.length === 0) {
-      setCurrentPage(0);
-    }
+
+    setCurrentPage(adjustCurrentPageAfterDelete(currentPage, newImages.length));
+    setDeleteTarget(null);
+  };
+
+  const requestDeleteImage = (pageIndex) => {
+    setDeleteTarget(pageIndex);
   };
 
   const handleGenerate = async () => {
@@ -287,7 +278,7 @@ const FlipBookViewer = () => {
 
       setFlipbookData(prev => ({
         ...prev,
-        images: [...prev.images, ...newImages].slice(0, 30),
+        images: capImagesAt30(prev.images, newImages),
         updatedAt: new Date().toISOString(),
       }));
 
@@ -314,12 +305,6 @@ const FlipBookViewer = () => {
     }));
   };
 
-  // Update total pages
-  const updateTotalPages = (newTotal) => {
-    // This function is no longer needed as pages are based on images
-    console.log('Total pages are now automatically managed based on images');
-  };
-
   // Drag and drop reordering
   const handleDragStart = (e, index) => {
     setDraggedIndex(index);
@@ -335,11 +320,7 @@ const FlipBookViewer = () => {
     newImages.splice(draggedIndex, 1);
     newImages.splice(index, 0, draggedImage);
     
-    // Update page numbers
-    const reorderedImages = newImages.map((img, idx) => ({
-      ...img,
-      pageNumber: idx
-    }));
+    const reorderedImages = renumberImages(newImages);
     
     setFlipbookData(prev => ({
       ...prev,
@@ -357,6 +338,10 @@ const FlipBookViewer = () => {
   // Flip to specific page
   const flipToPage = (pageIndex) => {
     if (pageIndex >= 0 && pageIndex < totalPages && !isFlipping) {
+      if (reduceMotion) {
+        setCurrentPage(pageIndex);
+        return;
+      }
       setIsFlipping(true);
       setFlipDirection(pageIndex > currentPage ? 'forward' : 'backward');
       setTimeout(() => {
@@ -368,6 +353,13 @@ const FlipBookViewer = () => {
 
   // Auto-play functionality
   useEffect(() => {
+    if (reduceMotion) {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+      return undefined;
+    }
+
     if (isPlaying) {
       playIntervalRef.current = setInterval(() => {
         setCurrentPage(prev => {
@@ -391,7 +383,7 @@ const FlipBookViewer = () => {
         clearInterval(playIntervalRef.current);
       }
     };
-  }, [isPlaying, flipSpeed, totalPages]);
+  }, [isPlaying, flipSpeed, totalPages, reduceMotion]);
 
   // Reset to beginning
   const handleReset = () => {
@@ -443,14 +435,14 @@ const FlipBookViewer = () => {
     }
   };
 
-  // Get image for specific page
-  const getImageForPage = (pageIndex) => {
-    return flipbookData.images.find(img => img.pageNumber === pageIndex) || 
-           flipbookData.images[pageIndex];
-  };
+  const getImageForPage = (pageIndex) =>
+    getImageForPageUtil(flipbookData.images, pageIndex);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white p-4 md:p-8">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -458,8 +450,8 @@ const FlipBookViewer = () => {
             <h1 className="text-4xl md:text-5xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
               3D Flip-Book Viewer
             </h1>
-            <p className="text-gray-400">Upload images and watch them flip like a real book</p>
-            <p className="text-xs text-gray-500 mt-1">
+            <p className="text-gray-300 text-base">Upload images and watch them flip like a real book</p>
+            <p className="text-sm text-gray-300 mt-1">
               {isLoggedIn ? (
                 <>Last updated: {flipbookData.updatedAt ? new Date(flipbookData.updatedAt).toLocaleString() : 'Never'}</>
               ) : (
@@ -489,86 +481,66 @@ const FlipBookViewer = () => {
           )}
         </div>
 
-        {/* Controls Panel */}
+        {/* Generation Controls */}
+        <main id="main-content" tabIndex={-1}>
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-gray-700">
+          <h2 className="text-base font-semibold uppercase tracking-wide text-gray-200 mb-4">
+            Generation
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium mb-2 text-gray-300">Upload Images</label>
-              <label className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg cursor-pointer transition-colors">
-                <Upload size={18} />
-                <span className="text-sm">Choose Files</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                />
-              </label>
-              <p className="text-xs text-gray-400 mt-1">{flipbookData.images.length} page(s)</p>
-              
-              {/* Prompt Input */}
-              <div className="mt-4">
-                <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Prompt <span className="text-red-400">*</span>
+            <div className="md:col-span-2 space-y-4">
+              <div>
+                <span id="upload-images-label" className="a11y-label block mb-2">Upload Images</span>
+                <label className="a11y-btn a11y-btn-primary flex items-center justify-center gap-2 cursor-pointer">
+                  <Upload size={18} aria-hidden="true" />
+                  <span>Choose Files</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    aria-labelledby="upload-images-label"
+                  />
+                </label>
+                <p className="a11y-helper mt-1">{flipbookData.images.length} page(s)</p>
+              </div>
+
+              <div>
+                <label htmlFor="story-prompt" className="a11y-label block mb-2">
+                  Prompt <span className="text-red-400">(required)</span>
                 </label>
                 <textarea
+                  id="story-prompt"
                   value={flipbookData.prompt}
                   onChange={(e) => updatePrompt(e.target.value)}
                   placeholder="Describe your flipbook animation... (required)"
-                  className="w-full px-4 py-2 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none resize-none text-sm"
+                  className="w-full px-4 py-3 bg-gray-700 rounded-lg border border-gray-600 focus:border-blue-500 focus:outline-none focus:shadow-[var(--a11y-focus-ring)] resize-none text-base"
                   rows="3"
+                  required
+                  aria-required="true"
                 />
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="a11y-helper mt-1">
                   {flipbookData.prompt.length} characters
                 </p>
               </div>
             </div>
 
-            <div className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">
-                  Flip Speed: {flipSpeed}ms
-                </label>
-                <input
-                  type="range"
-                  min="100"
-                  max="2000"
-                  step="50"
-                  value={flipSpeed}
-                  onChange={(e) => setFlipSpeed(parseInt(e.target.value))}
-                  className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
-                  }}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2 text-gray-300">Actions</label>
-                <div className="space-y-2">
-                  <button
-                    onClick={handleGenerate}
-                    disabled={!canGenerate || isGenerating}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-lg">✨</span>
-                    <span className="text-sm font-semibold">
-                      {isGenerating
-                        ? (generationProgress || 'Generating...')
-                        : 'Run Generation'}
-                    </span>
-                  </button>
-                  
-                  <button
-                    onClick={handleExport}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
-                  >
-                    <Download size={18} />
-                    <span className="text-sm">Export Page</span>
-                  </button>
-                </div>
-              </div>
+            <div className="flex flex-col justify-end">
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={!canGenerate || isGenerating}
+                className="a11y-btn w-full flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-busy={isGenerating}
+              >
+                <span className="text-lg" aria-hidden="true">✨</span>
+                <span className="font-semibold">
+                  {isGenerating
+                    ? (generationProgress || 'Generating...')
+                    : 'Run Generation'}
+                </span>
+              </button>
             </div>
           </div>
         </div>
@@ -662,104 +634,168 @@ const FlipBookViewer = () => {
               </div>
 
               {/* Page Counter */}
-              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg">
-                <span className="text-lg font-semibold">{currentPage + 1} / {totalPages}</span>
+              <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg" aria-live="polite" aria-atomic="true">
+                <span className="text-lg font-semibold">Page {currentPage + 1} of {totalPages}</span>
               </div>
             </>
           )}
         </div>
 
-        {/* Playback Controls */}
+        {/* Viewing Controls */}
         <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-gray-700">
-          <div className="flex flex-wrap items-center justify-center gap-4">
+          <h2 className="text-base font-semibold uppercase tracking-wide text-gray-200 mb-4">
+            Viewing
+          </h2>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
             <button
+              type="button"
               onClick={() => flipToPage(currentPage - 1)}
               disabled={currentPage === 0 || isFlipping}
-              className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="a11y-icon-btn"
+              aria-label="Previous page"
             >
-              <ChevronLeft size={24} />
+              <ChevronLeft size={24} aria-hidden="true" />
             </button>
 
             <button
+              type="button"
               onClick={handleReset}
-              className="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors"
+              className="a11y-btn a11y-btn-secondary flex items-center gap-2"
+              aria-label="Reset to first page"
             >
-              <RotateCcw size={20} />
-              <span className="hidden sm:inline">Reset</span>
+              <RotateCcw size={20} aria-hidden="true" />
+              <span>Reset</span>
             </button>
 
             <button
+              type="button"
               onClick={() => setIsPlaying(!isPlaying)}
-              className={`flex items-center gap-2 px-8 py-3 rounded-lg transition-colors ${
-                isPlaying 
-                  ? 'bg-red-600 hover:bg-red-700' 
-                  : 'bg-blue-600 hover:bg-blue-700'
+              disabled={reduceMotion && !isPlaying}
+              className={`a11y-btn flex items-center gap-2 ${
+                isPlaying
+                  ? 'bg-red-600 hover:bg-red-700'
+                  : 'a11y-btn-primary'
               }`}
+              aria-label={isPlaying ? 'Pause auto-play' : 'Start auto-play'}
+              aria-pressed={isPlaying}
             >
-              {isPlaying ? <Pause size={20} /> : <Play size={20} />}
+              {isPlaying ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
               <span className="font-semibold">{isPlaying ? 'Pause' : 'Play'}</span>
             </button>
 
             <button
+              type="button"
               onClick={() => flipToPage(currentPage + 1)}
               disabled={currentPage === totalPages - 1 || isFlipping || totalPages === 0}
-              className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="a11y-icon-btn"
+              aria-label="Next page"
             >
-              <ChevronRight size={24} />
+              <ChevronRight size={24} aria-hidden="true" />
             </button>
+
+            <button
+              type="button"
+              onClick={handleExport}
+              className="a11y-btn flex items-center gap-2 bg-green-700 hover:bg-green-800"
+              aria-label="Export current page as PNG"
+            >
+              <Download size={18} aria-hidden="true" />
+              <span>Export Page</span>
+            </button>
+          </div>
+
+          <div className="max-w-md mx-auto mb-6">
+            <label htmlFor="flip-speed" className="a11y-label block mb-2 text-center">
+              Flip Speed
+            </label>
+            <input
+              id="flip-speed"
+              type="range"
+              min="100"
+              max="2000"
+              step="50"
+              value={flipSpeed}
+              onChange={(e) => setFlipSpeed(parseInt(e.target.value, 10))}
+              className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+              aria-valuemin={100}
+              aria-valuemax={2000}
+              aria-valuenow={flipSpeed}
+              aria-valuetext={`${flipSpeed} milliseconds per page`}
+              style={{
+                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
+              }}
+            />
           </div>
 
           {/* Page Thumbnails with Drag & Drop */}
           {totalPages > 0 && (
-            <div className="mt-6">
-              <div className="text-sm text-gray-400 mb-2 flex items-center justify-between">
+            <div>
+              <div className="text-sm text-gray-200 mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <GripVertical size={16} />
+                  <GripVertical size={16} aria-hidden="true" />
                   Drag thumbnails to reorder pages
                 </div>
-                <div className="text-xs">
+                <div className="text-sm">
                   {flipbookData.images.length} page(s)
                 </div>
               </div>
-              <div className="flex gap-2 overflow-x-auto pb-4 pt-2 px-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800">
+              <div
+                className="flex gap-2 overflow-x-auto pb-4 pt-2 px-2 scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-gray-800"
+                role="list"
+                aria-label="Page thumbnails"
+              >
                 {Array.from({ length: totalPages }).map((_, idx) => {
                   const imageData = getImageForPage(idx);
                   return (
                     <div
                       key={idx}
                       className="relative flex-shrink-0 group"
+                      role="listitem"
                     >
                       <div
-                        draggable={imageData ? true : false}
+                        draggable={!!imageData}
                         onDragStart={(e) => imageData && handleDragStart(e, idx)}
                         onDragOver={(e) => handleDragOver(e, idx)}
                         onDragEnd={handleDragEnd}
                         onClick={() => flipToPage(idx)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            flipToPage(idx);
+                          }
+                        }}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`Go to page ${idx + 1}${currentPage === idx ? ', current page' : ''}`}
+                        aria-current={currentPage === idx ? 'true' : undefined}
                         className={`w-16 h-20 rounded-lg border-2 transition-all cursor-pointer ${
-                          currentPage === idx 
-                            ? 'border-blue-500 scale-110' 
+                          currentPage === idx
+                            ? 'border-blue-500 scale-110'
                             : 'border-gray-600 hover:border-gray-500'
                         } ${isFlipping ? 'pointer-events-none' : ''} ${
                           draggedIndex === idx ? 'opacity-50' : ''
                         } ${imageData ? 'cursor-move' : 'cursor-pointer'}`}
                       >
                         {imageData ? (
-                          <img src={imageData.imageUrl} alt={`Thumb ${idx + 1}`} className="w-full h-full object-cover rounded-md" />
+                          <img src={imageData.imageUrl} alt="" className="w-full h-full object-cover rounded-md" />
                         ) : (
-                          <div className="w-full h-full bg-gray-700 rounded-md flex items-center justify-center text-xs">
+                          <div className="w-full h-full bg-gray-700 rounded-md flex items-center justify-center text-sm">
                             {idx + 1}
                           </div>
                         )}
                       </div>
                       {imageData && (
                         <button
+                          type="button"
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteImage(idx);
+                            requestDeleteImage(idx);
                           }}
-                          className="absolute -top-2 -right-2 p-1 bg-red-600 hover:bg-red-700 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute -top-2 -right-2 min-h-[var(--a11y-touch-min)] min-w-[var(--a11y-touch-min)] flex items-center justify-center bg-red-600 hover:bg-red-700 rounded-full"
+                          aria-label={`Delete page ${idx + 1}`}
                         >
-                          <Trash2 size={12} />
+                          <Trash2 size={16} aria-hidden="true" />
                         </button>
                       )}
                     </div>
@@ -769,6 +805,17 @@ const FlipBookViewer = () => {
             </div>
           )}
         </div>
+        </main>
+
+        <ConfirmDialog
+          open={deleteTarget !== null}
+          title="Remove this page?"
+          message="This page will be removed from your flipbook. You can always upload it again later."
+          confirmLabel="Remove page"
+          cancelLabel="Keep page"
+          onConfirm={() => deleteImage(deleteTarget)}
+          onCancel={() => setDeleteTarget(null)}
+        />
 
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>

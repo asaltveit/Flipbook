@@ -6,7 +6,7 @@ fal.config({
   credentials: import.meta.env.VITE_FAL_KEY,
 });
 
-function extractImageUrl(data) {
+export function extractImageUrl(data) {
   if (data?.images?.[0]?.url) return data.images[0].url;
   if (data?.image?.url) return data.image.url;
   if (typeof data?.url === "string") return data.url;
