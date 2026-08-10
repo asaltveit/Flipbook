@@ -14,8 +14,7 @@
     "test:e2e": "playwright test",
     "pretest:e2e": "node scripts/ensure-vite-bin.cjs",
     "test:a11y": "playwright test e2e/accessibility.spec.js",
-    "pretest:a11y": "node scripts/ensure-vite-bin.cjs",
-    "lhci": "lhci autorun"
+    "pretest:a11y": "node scripts/ensure-vite-bin.cjs"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
@@ -29,7 +28,6 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
-    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.62.1",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.0",
