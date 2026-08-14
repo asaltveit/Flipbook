@@ -18,7 +18,7 @@ jobs:
       - run: npm run lint
       - run: npm run test:coverage
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage
           path: coverage
@@ -36,7 +36,7 @@ jobs:
         env:
           VITE_ANTHROPIC_KEY: ci-test-anthropic-key
           VITE_FAL_KEY: ci-test-fal-key
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
