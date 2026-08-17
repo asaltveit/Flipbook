@@ -9,7 +9,6 @@ export default defineConfig([
   globalIgnores([
     'dist',
     'coverage',
-    'lighthouse-reports',
     'playwright-report',
     'test-results',
     'src/hooks/useImageCreation.js',
@@ -17,7 +16,7 @@ export default defineConfig([
     'src/components/supabase/**',
   ]),
   {
-    files: ['playwright.config.js', 'lighthouserc.cjs'],
+    files: ['playwright.config.js'],
     languageOptions: {
       globals: globals.node,
     },

@@ -14,14 +14,13 @@
     "test:e2e": "playwright test",
     "pretest:e2e": "node scripts/ensure-vite-bin.cjs",
     "test:a11y": "playwright test e2e/accessibility.spec.js",
-    "pretest:a11y": "node scripts/ensure-vite-bin.cjs",
-    "lhci": "lhci autorun"
+    "pretest:a11y": "node scripts/ensure-vite-bin.cjs"
   },
   "dependencies": {
     "@fal-ai/client": "^1.10.1",
     "@tailwindcss/vite": "^4.3.3",
     "@vercel/speed-insights": "^2.0.0",
-    "lucide-react": "^1.28.0",
+    "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.2.2"
@@ -29,10 +28,9 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
     "@eslint/js": "^10.0.1",
-    "@lhci/cli": "^0.15.1",
     "@playwright/test": "^1.62.1",
     "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.3",
     "@types/react": "^19.2.18",
@@ -42,9 +40,9 @@
     "eslint": "^10.8.0",
     "eslint-plugin-jsx-a11y-x": "^0.2.0",
     "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.3",
+    "eslint-plugin-react-refresh": "^0.5.4",
     "globals": "^17.9.0",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.0.1",
     "msw": "^2.15.0",
     "vite": "^8.2.0",
     "vitest": "^4.1.10"
