@@ -487,10 +487,13 @@ const FlipBookViewer = () => {
           <h2 className="text-base font-semibold uppercase tracking-wide text-gray-200 mb-4">
             Generation
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-4">
               <div>
-                <span id="upload-images-label" className="a11y-label block mb-2">Upload Images</span>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <span id="upload-images-label" className="a11y-label">Upload Images</span>
+                  <span className="a11y-helper">{flipbookData.images.length} page(s)</span>
+                </div>
                 <label className="a11y-btn a11y-btn-primary flex items-center justify-center gap-2 cursor-pointer">
                   <Upload size={18} aria-hidden="true" />
                   <span>Choose Files</span>
@@ -503,13 +506,15 @@ const FlipBookViewer = () => {
                     aria-labelledby="upload-images-label"
                   />
                 </label>
-                <p className="a11y-helper mt-1">{flipbookData.images.length} page(s)</p>
               </div>
 
               <div>
-                <label htmlFor="story-prompt" className="a11y-label block mb-2">
-                  Prompt <span className="text-red-400">(required)</span>
-                </label>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <label htmlFor="story-prompt" className="a11y-label">
+                    Prompt <span className="text-red-400">(required)</span>
+                  </label>
+                  <span className="a11y-helper">{flipbookData.prompt.length} characters</span>
+                </div>
                 <textarea
                   id="story-prompt"
                   value={flipbookData.prompt}
@@ -520,9 +525,6 @@ const FlipBookViewer = () => {
                   required
                   aria-required="true"
                 />
-                <p className="a11y-helper mt-1">
-                  {flipbookData.prompt.length} characters
-                </p>
               </div>
             </div>
 
@@ -647,90 +649,94 @@ const FlipBookViewer = () => {
             Viewing
           </h2>
 
-          <div className="flex flex-wrap items-center justify-center gap-4 mb-6">
-            <button
-              type="button"
-              onClick={() => flipToPage(currentPage - 1)}
-              disabled={currentPage === 0 || isFlipping}
-              className="a11y-icon-btn"
-              aria-label="Previous page"
-            >
-              <ChevronLeft size={24} aria-hidden="true" />
-            </button>
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => flipToPage(currentPage - 1)}
+                disabled={currentPage === 0 || isFlipping}
+                className="a11y-icon-btn"
+                aria-label="Previous page"
+              >
+                <ChevronLeft size={24} aria-hidden="true" />
+              </button>
 
-            <button
-              type="button"
-              onClick={handleReset}
-              className="a11y-btn a11y-btn-secondary flex items-center gap-2"
-              aria-label="Reset to first page"
-            >
-              <RotateCcw size={20} aria-hidden="true" />
-              <span>Reset</span>
-            </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                className="a11y-btn a11y-btn-secondary flex items-center gap-2"
+                aria-label="Reset to first page"
+              >
+                <RotateCcw size={20} aria-hidden="true" />
+                <span>Reset</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => setIsPlaying(!isPlaying)}
-              disabled={reduceMotion && !isPlaying}
-              className={`a11y-btn flex items-center gap-2 ${
-                isPlaying
-                  ? 'bg-red-600 hover:bg-red-700'
-                  : 'a11y-btn-primary'
-              }`}
-              aria-label={isPlaying ? 'Pause auto-play' : 'Start auto-play'}
-              aria-pressed={isPlaying}
-            >
-              {isPlaying ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
-              <span className="font-semibold">{isPlaying ? 'Pause' : 'Play'}</span>
-            </button>
+              <button
+                type="button"
+                onClick={() => setIsPlaying(!isPlaying)}
+                disabled={reduceMotion && !isPlaying}
+                className={`a11y-btn flex items-center gap-2 ${
+                  isPlaying
+                    ? 'bg-red-600 hover:bg-red-700'
+                    : 'a11y-btn-primary'
+                }`}
+                aria-label={isPlaying ? 'Pause auto-play' : 'Start auto-play'}
+                aria-pressed={isPlaying}
+              >
+                {isPlaying ? <Pause size={20} aria-hidden="true" /> : <Play size={20} aria-hidden="true" />}
+                <span className="font-semibold">{isPlaying ? 'Pause' : 'Play'}</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => flipToPage(currentPage + 1)}
-              disabled={currentPage === totalPages - 1 || isFlipping || totalPages === 0}
-              className="a11y-icon-btn"
-              aria-label="Next page"
-            >
-              <ChevronRight size={24} aria-hidden="true" />
-            </button>
+              <button
+                type="button"
+                onClick={() => flipToPage(currentPage + 1)}
+                disabled={currentPage === totalPages - 1 || isFlipping || totalPages === 0}
+                className="a11y-icon-btn"
+                aria-label="Next page"
+              >
+                <ChevronRight size={24} aria-hidden="true" />
+              </button>
 
-            <button
-              type="button"
-              onClick={handleExport}
-              className="a11y-btn flex items-center gap-2 bg-green-700 hover:bg-green-800"
-              aria-label="Export current page as PNG"
-            >
-              <Download size={18} aria-hidden="true" />
-              <span>Export Page</span>
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={handleExport}
+                className="a11y-btn flex items-center gap-2 bg-green-700 hover:bg-green-800"
+                aria-label="Export current page as PNG"
+              >
+                <Download size={18} aria-hidden="true" />
+                <span>Export Page</span>
+              </button>
+            </div>
 
-          <div className="max-w-md mx-auto mb-6">
-            <label htmlFor="flip-speed" className="a11y-label block mb-2 text-center">
-              Flip Speed
-            </label>
-            <input
-              id="flip-speed"
-              type="range"
-              min="100"
-              max="2000"
-              step="50"
-              value={flipSpeed}
-              onChange={(e) => setFlipSpeed(parseInt(e.target.value, 10))}
-              className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-              aria-valuemin={100}
-              aria-valuemax={2000}
-              aria-valuenow={flipSpeed}
-              aria-valuetext={`${flipSpeed} milliseconds per page`}
-              style={{
-                background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
-              }}
-            />
-          </div>
+            <div className="max-w-md mx-auto w-full">
+              <div className="flex items-baseline justify-center gap-2 mb-2">
+                <label htmlFor="flip-speed" className="a11y-label">
+                  Flip Speed
+                </label>
+                <span className="a11y-helper">{flipSpeed}ms</span>
+              </div>
+              <input
+                id="flip-speed"
+                type="range"
+                min="100"
+                max="2000"
+                step="50"
+                value={flipSpeed}
+                onChange={(e) => setFlipSpeed(parseInt(e.target.value, 10))}
+                className="w-full h-3 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                aria-valuemin={100}
+                aria-valuemax={2000}
+                aria-valuenow={flipSpeed}
+                aria-valuetext={`${flipSpeed} milliseconds per page`}
+                style={{
+                  background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((flipSpeed - 100) / 1900) * 100}%, #374151 ${((flipSpeed - 100) / 1900) * 100}%, #374151 100%)`
+                }}
+              />
+            </div>
 
-          {/* Page Thumbnails with Drag & Drop */}
-          {totalPages > 0 && (
-            <div>
+            {/* Page Thumbnails with Drag & Drop */}
+            {totalPages > 0 && (
+              <div>
               <div className="text-sm text-gray-200 mb-2 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <GripVertical size={16} aria-hidden="true" />
@@ -803,7 +809,8 @@ const FlipBookViewer = () => {
                 })}
               </div>
             </div>
-          )}
+            )}
+          </div>
         </div>
         </main>
 
