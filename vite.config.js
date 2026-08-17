@@ -13,6 +13,27 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  // Pre-bundle known runtime deps so Vite does not rediscover them mid-session
+  // and return 504 "Outdated Optimize Dep" to the browser.
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'lucide-react',
+      '@fal-ai/client',
+      '@vercel/speed-insights/react',
+    ],
+  },
+  server: {
+    warmup: {
+      clientFiles: [
+        './src/main.jsx',
+        './src/App.jsx',
+        './src/components/FlipbookViewer.jsx',
+      ],
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: './src/test/setup.js',

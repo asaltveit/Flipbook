@@ -820,7 +820,7 @@ const FlipBookViewer = () => {
         <canvas ref={canvasRef} style={{ display: 'none' }} />
       </div>
 
-      <style jsx>{`
+      <style>{`
         .perspective-container {
           perspective: 2500px;
           display: flex;
