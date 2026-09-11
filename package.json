@@ -20,7 +20,7 @@
     "@fal-ai/client": "^1.10.1",
     "@tailwindcss/vite": "^4.3.3",
     "@vercel/speed-insights": "^2.0.0",
-    "lucide-react": "^1.38.0",
+    "lucide-react": "^1.42.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "tailwindcss": "^4.2.2"
@@ -34,7 +34,7 @@
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.6",
     "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.5",
+    "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "@vitest/coverage-v8": "^4.1.11",
     "eslint": "^10.9.1",
